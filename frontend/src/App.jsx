@@ -13,7 +13,7 @@ function App() {
   const fetchLeads = async () => {
     setIsFetching(true);
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/leads');
+      const response = await fetch('https://salescatalyst-api.onrender.com/api/leads');
       if (!response.ok) throw new Error('Failed to fetch leads');
       const data = await response.json();
       setLeads(data.data);
@@ -40,7 +40,7 @@ function App() {
   const runAgent = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/run-agent', { method: 'POST' });
+      const response = await fetch('https://salescatalyst-api.onrender.com/api/run-agent', { method: 'POST' });
       if (!response.ok) throw new Error('Agent execution failed');
       await response.json();
       fetchLeads();
@@ -54,7 +54,7 @@ function App() {
   const handleApprove = async (leadId) => {
     try {
       // NEW: Send the edited text back to the Python backend
-      const response = await fetch(`http://127.0.0.1:5000/api/approve/${leadId}`, {
+      const response = await fetch(`https://salescatalyst-api.onrender.com/api/approve/${leadId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
