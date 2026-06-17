@@ -7,12 +7,12 @@ function App() {
   const [error, setError] = useState(null);
   
   const [selectedLead, setSelectedLead] = useState(null);
-  // NEW: State to track the human's live edits to the email
   const [editableDraft, setEditableDraft] = useState("");
 
   const fetchLeads = async () => {
     setIsFetching(true);
     try {
+      // FIX 1: Pointing directly to the correct leads endpoint
       const response = await fetch('https://salescatalyst-api.onrender.com/api/leads');
       if (!response.ok) throw new Error('Failed to fetch leads');
       const data = await response.json();
@@ -28,7 +28,6 @@ function App() {
     fetchLeads();
   }, []);
 
-  // NEW: When a modal opens, load the AI's draft into the editable state
   useEffect(() => {
     if (selectedLead && selectedLead.draft_text) {
       setEditableDraft(selectedLead.draft_text);
@@ -53,7 +52,7 @@ function App() {
 
   const handleApprove = async (leadId) => {
     try {
-      // NEW: Send the edited text back to the Python backend
+      // FIX 2: Pointing to the correct /api/approve endpoint
       const response = await fetch(`https://salescatalyst-api.onrender.com/api/approve/${leadId}`, {
         method: 'POST',
         headers: {
@@ -149,7 +148,7 @@ function App() {
         </div>
       </div>
 
-      {/*  THE INTELLIGENCE MODAL */}
+      {/* THE INTELLIGENCE MODAL */}
       {selectedLead && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-gray-800 rounded-2xl w-full max-w-4xl border border-gray-600 shadow-2xl flex flex-col max-h-[90vh]">
@@ -173,7 +172,7 @@ function App() {
 
                 <div className="bg-purple-900/20 p-4 rounded-xl border border-purple-800/50">
                   <h3 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                     Arize Guardrails
+                      Arize Guardrails
                   </h3>
                   <div className="space-y-3">
                     <div>
@@ -205,7 +204,6 @@ function App() {
                   <span className="text-[10px] text-gray-500 uppercase">Human Override Active</span>
                 </div>
                 
-                {/* NEW: The static div is now a fully interactive textarea */}
                 {selectedLead.draft_text ? (
                   <textarea 
                     value={editableDraft}
@@ -224,7 +222,7 @@ function App() {
             <div className="p-4 border-t border-gray-700 bg-gray-900 rounded-b-2xl flex justify-end gap-3">
               <button onClick={() => setSelectedLead(null)} className="px-5 py-2 rounded font-semibold text-gray-300 hover:bg-gray-800">Cancel</button>
               
-              {selectedLead.draft_text && selectedLead.draft_status !== 'Email Sent ' && (
+              {selectedLead.draft_text && !selectedLead.draft_status?.includes('Email Sent') && (
                 <button 
                   onClick={() => handleApprove(selectedLead.lead_id)}
                   className="px-5 py-2 rounded font-semibold bg-green-600/20 text-green-400 border border-green-800 hover:bg-green-600 hover:text-white transition-colors"
