@@ -49,7 +49,7 @@ def check_inbound_emails() -> str:
 def get_inventory_for_audience(target_role: str) -> str:
     """Fetches available inventory products tailored to a specific target audience role (e.g., 'CTO')."""
     print(f"[TOOL CALLED] Checking Inventory for {target_role}...")
-    time.sleep(15)
+    
     products = list(db.inventory.find(
         {"target_audience": {"$regex": target_role, "$options": "i"}, "in_stock": True},
         {"_id": 0}
