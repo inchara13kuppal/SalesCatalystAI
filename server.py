@@ -1,11 +1,11 @@
 import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request
 
-#  THE MAGIC LINK: Import your agent directly!
+# Import your modular tools
+from email_service import send_sales_email
 from agent import run_sales_catalyst_agent 
 
 load_dotenv()
@@ -56,7 +56,7 @@ def trigger_agent():
             You MUST use the `save_draft_for_review` tool to save the final draft.
             """
             
-            #  TRIGGERING THE AI
+            # TRIGGERING THE AI
             run_sales_catalyst_agent(custom_prompt=prompt)
             
         return jsonify({"status": "success", "logs": "Agent successfully processed the lead."}), 200
@@ -66,29 +66,57 @@ def trigger_agent():
 
 @app.route('/api/approve/<lead_id>', methods=['POST'])
 def approve_lead(lead_id):
-    """Endpoint to handle human-in-the-loop email approvals and edits."""
+    """Endpoint to handle human-in-the-loop email approvals, edits, and live dispatch."""
     try:
-        # Capture the edited text sent from the React frontend
+        # 1. Fetch the lead info from MongoDB to get the recipient email address
+        lead = db.crm_leads.find_one({"lead_id": lead_id})
+        if not lead:
+            return jsonify({"status": "error", "message": "Lead not found in database."}), 404
+
+        # Grab the email field (handles 'email' or 'email_address' depending on your schema)
+        recipient_email = lead.get("email") or lead.get("email_address")
+        if not recipient_email:
+            return jsonify({"status": "error", "message": "This lead does not have a valid email address associated."}), 400
+
+        # 2. Capture the edited text sent from the React frontend
         data = request.json or {}
         edited_text = data.get("draft_text")
 
-        # Prepare the fields to update
+        # Determine final text content to send (fallback to existing draft if no edits made)
+        final_email_content = edited_text if edited_text else lead.get("draft_text", "")
+        
+        if not final_email_content:
+            return jsonify({"status": "error", "message": "No email content draft available to send."}), 400
+
+        # 3. Fire the real email through your SMTP transmission service!
+        # Converting linebreaks to HTML tags ensures formatting matches what was in your text box
+        body_html = f"<html><body style='font-family: Arial, sans-serif;'>{final_email_content.replace('\n', '<br>')}</body></html>"
+        subject = f"Optimizing Solutions for {lead.get('company', 'Your Team')}"
+        
+        email_sent = send_sales_email(
+            to_email=recipient_email,
+            subject=subject,
+            body_html=body_html
+        )
+
+        if not email_sent:
+            return jsonify({"status": "error", "message": "Failed to route email through SMTP server."}), 500
+
+        # 4. If email transmission succeeds, update the database flags
         update_fields = {
             "draft_status": "Email Sent ", 
             "status": "Engaging"
         }
-        
-        # If the SDR edited the text, update the database with their new version
         if edited_text:
             update_fields["draft_text"] = edited_text
 
-        # Update MongoDB
         db.crm_leads.update_one(
             {"lead_id": lead_id},
             {"$set": update_fields}
         )
         
-        return jsonify({"status": "success", "message": f"Lead {lead_id} approved!"}), 200
+        return jsonify({"status": "success", "message": f"Lead {lead_id} approved and email dispatched successfully!"}), 200
+        
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
