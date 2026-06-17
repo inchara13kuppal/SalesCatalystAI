@@ -51,7 +51,7 @@ To adapt this system for your organization, modify the core system prompt and to
 
 ---
 
-## 📝 Kaggle Capstone Write-Up: Methodology & Evaluation
+##  Kaggle Capstone Write-Up: Methodology & Evaluation
 *This project was developed in alignment with the Google and Kaggle Agents Intensive Capstone.*
 
 🔗 **[Read the Full Official Kaggle Write-Up Here](https://www.kaggle.com/competitions/agents-intensive-capstone-project/writeups/Sales-Performance-Optimization-Agent)**
